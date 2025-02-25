@@ -1,0 +1,12 @@
+.vs
+.BK
+dist/*
+.idea
+build/*
+.__pycache__
+.pyphotron.egg-info
+
+*.c
+*.bat
+*.py[co]
+*.egg-info
