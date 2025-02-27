@@ -16,7 +16,7 @@ Installation
   - cd to the repository folder
   - run 
 
-	python setup.py install
+		python setup.py install
 
 Please add you python interpretor to the firewall and define a rule to allowing acess to High speec camera ports.
 
