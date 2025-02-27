@@ -37,6 +37,17 @@ cpdef check_pdc_failed(ulong success, ulong error_code):
 
 
 cpdef init_pdc_lib():
+    '''
+    PDCLIB must be initialized before using various functions of PDCLIB.
+
+    PDCLIB is initialized using a PDC_Init function.
+
+    A PDC_Init function is performed only once in a process. 
+    It is not necessary to perform this function multiple times.
+
+    It is not necessary to explicitly perform termination. 
+    In PDCLIB, all termination operations are automatically performed when a process is terminated. 
+    '''
     print('Initialising')
     cdef:
         ulong success = pdc_failed
@@ -57,6 +68,11 @@ cpdef is_function(ulong device_nb, ulong child_nb, ulong n_function):
 
 
 cpdef _detect_devices(subnet=(192, 168, 0, 0)):
+    """
+    To control a high-speed camera in PDCLIB, the high-speed camera to be controlled must first be located using a PDC_DetectDevice function. 
+    (When the development language is C#, please use PDC_DetectDeviceLV function.)
+    """
+
     cdef:
         ulong ip_list[PDC_MAX_DEVICE]
         PDC_DETECT_NUM_INFO detect_info
@@ -83,6 +99,13 @@ cpdef _detect_devices(subnet=(192, 168, 0, 0)):
 
 
 cpdef _detect_devices_lv(subnet=(192, 168, 0, 0)):
+    """
+    This function searches for devices that can be opened and retrieves the number of those devices.
+    This function is the same as PDC_DetectDevice except a different way of parameter passing.
+    Please use it when the development language is C#.
+
+    CHECK: Also, for some reason the previous developer have used the C# implementation. Ofcourse as long as it works I have to complaint.
+    """
     cdef:
         ulong n_interface_code = PDC_INTTYPE_G_ETHER, n_detect_num = PDC_MAX_DEVICE, n_detect_param = PDC_DETECT_AUTO
         ulong p_device_num = 0, p_device_code = 0, p_tmp_device_no = 0, p_interface_code = 0
@@ -155,8 +178,10 @@ cpdef _set_record_rate(ulong device_nb, ulong child_nb, ulong frame_rate):
 
 
 cpdef close_cam(ulong dev_num):
-    """Because this function is automatically called upon when the process using PDCLIB is terminated,
-    it does not necessarily need to be used."""
+    """
+    Because this function is automatically called upon when the process using PDCLIB is terminated,
+    it does not necessarily need to be used.
+    """
 
     cdef:
         ulong success = pdc_failed
