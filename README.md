@@ -1,17 +1,17 @@
 # PyPhotron
-This section is part of a larger project, aimed at automating Photron Fastcam high-speed cameras. 
+This section is part of a larger project, aimed at automating Photron Fastcam high-speed cameras.
+
 While Photron provides source code for camera interaction, I lacked proficiency in C. 
-After reaching out to their support team, they recommended using an open-source Python wrapper for their SDK.
-https://gitlab.com/icm-institute/renier/pyphotron
+After reaching out to their support team, they recommended using an [open-source Python wrapper](https://gitlab.com/icm-institute/renier/pyphotron) for their SDK.
 Special thanks to PyPhotron and the Photron support team for their assistance.
 
-SDK is compatible with windows, according to the help file.
+SDK's dlls are compatible with **windows**.
 
 
 Installation
 ============
 
-  - Create a suitable environment (python >=3.7 with at least the cython package)
+  - Create a suitable environment (python >=3.10 with at least the **cython package**)
   - Clone the repository
   - cd to the repository folder
   - run 
