@@ -7,6 +7,8 @@ __licence__ = 'MIT'
 """
 
 import  datetime
+import time as time2
+import tqdm
 import  os
 import  cv2
 import  numpy                       as np
@@ -461,7 +463,8 @@ cpdef save(ulong device_nb, ulong child_nb, str folder, str base_name, bint prep
         f_name = base_name
     dest_path = os.path.join(folder, f_name)
     if not os.path.exists(dest_path):
-        os.mkdir(dest_path)
+        #os.mkdir(dest_path)
+        os.makedirs(dest_path, exist_ok=True)
 
     # //////////////// RECORDING PARAMETERS /////////
     rec_info.width, rec_info.height = _get_mem_resolution(device_nb, child_nb)
@@ -538,6 +541,8 @@ cpdef save_h264(ulong device_nb, ulong child_nb, str dest_path, uint idx, ulong 
     video = cv2.VideoWriter(file_path, cv2.VideoWriter_fourcc(*'mp4v'),
                             float(rec_info.fps), (int(rec_info.width), int(rec_info.height)), rec_info.color)
 
+
+
     if not video.isOpened():
         video.release()
         print("Could not start recording of video {}".format(file_path))
@@ -552,7 +557,7 @@ cpdef save_h264(ulong device_nb, ulong child_nb, str dest_path, uint idx, ulong 
     cdef np.ndarray[np.uint8_t, ndim=1] color_img = np.empty(rec_info.width * rec_info.height * 3, dtype=np.uint8)
     cdef np.ndarray[np.uint8_t, ndim=1] bw_img = np.empty(rec_info.width * rec_info.height, dtype=np.uint8)
     cdef ulong frame_idx = 0, bit_depth = 8
-    for frame_idx in range(start_frame_idx, end_frame_idx):
+    for frame_idx in tqdm.tqdm(range(start_frame_idx, end_frame_idx)):
         # print("Processing frame {}".format(frame_idx))
         if rec_info.color:
             success = PDC_GetMemImageData(device_nb, child_nb, frame_idx, bit_depth, &color_img[0], &error_code)
@@ -603,36 +608,79 @@ def clear_recording(ulong device_nb):
     set_rec_ready(device_nb)
     set_playback(device_nb)
 
-cpdef test_live_CV2():
+def test_live_CV2(fps_index, shutter_index, resolution_index):
     init_pdc_lib()
     cdef ulong device_nb    = auto_open_cam_lv()
     child_list              = _get_child_device_list(device_nb)
     child_nb                = child_list[0]
-    fps_list                = _get_record_rate_list(device_nb, child_nb)
-    fps                     = fps_list[1]
-    print(fps)
-    _set_record_rate(device_nb, child_nb, fps)
-
-    speeds = _get_shutter_speeds(device_nb, child_nb)
-    print('Shutter speeds: ', speeds, '\n', speeds[10])
-    _set_shutter_fps(device_nb, child_nb, speeds[10])
+    
+    
+    fps_list    = _get_record_rate_list (device_nb, child_nb)
+    resolutions = _get_resolutions_list (device_nb, child_nb)
+    speeds      = _get_shutter_speeds   (device_nb, child_nb)
+    
+    _set_record_rate(device_nb, child_nb, fps_list[fps_index])
+    _set_shutter_fps(device_nb, child_nb, speeds[shutter_index])
+    _set_resolution (device_nb, child_nb, resolutions[resolution_index])
 
     set_live(device_nb)
-    
+    set_rec_ready(device_nb)
+
+    # Initialize the FPS counter
+    fps         = 0
+    frame_count = 0
+    start_time  = time2.time()
+    font        = cv2.FONT_HERSHEY_SIMPLEX
+    _loc_save = False
     while True:
-        frame = read_live_frame(device_nb, child_nb, 1280,1024, 0)
-        #cv2.imshow("Live Feed", frame)
-        sleep(.05)
+        frame = read_live_frame_BW(device_nb, child_nb, *get_shape(resolutions[resolution_index]))
+        frame = frame * 2
+        # Increment the frame counter and FPS counter
+        frame_count     += 1
+        elapsed_time    = time2.time() - start_time
+        if elapsed_time >= 1.0:
+            fps         = frame_count / elapsed_time
+            frame_count = 0
+            start_time  = time2.time()
+        cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        frame = process_frame(frame)
-        cv2.imshow('Edges', frame)
+        equalized = cv2.equalizeHist(frame)
+        cv2.imshow("Live brighten", equalized)
 
-        # Exit when 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        #frame = process_frame(frame)
+        #cv2.imshow('Edges', frame)
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord('q'):  # Quit on 'q' key
             break
+
+        elif key == ord('s'):  # Save the frame when 's' is pressed
+            record(device_nb)
+            
+        
+        elif key == ord('e'):
+            _loc_save = True
+            break
+
+        sleep(1/58/2) # we sample frmaes with 58 Hz, it is realiztic when resolution is set to get_shape(resolutions[5])
+    
+    if _loc_save:
+        saving(device_nb, child_nb, fps)
 
     close_cam(device_nb)
     print('Done')
+
+
+def saving(device_nb, child_nb, fps):
+    set_playback(device_nb)
+    print('Recording done')
+    print('Memory resolution: ', '{}x{}'.format(*_get_mem_resolution(device_nb, child_nb)))
+    test_folder = os.path.normpath(os.path.expanduser('C:/Users/YSN-F/Desktop/PyPhotron/Saves'))
+    basename = f'test_{fps=}_{_get_mem_resolution(device_nb, child_nb)}_{save_time()}'
+    print('Saving H264')
+    save(device_nb, child_nb, test_folder, basename, 1,
+                vid_idx=0, n_frames_per_trig=500000, codec='h264') # n_frames_per_trig=500000 is the number of frames in a video, if you set 1 it will save all frames
 
 
 cpdef test():
@@ -646,7 +694,7 @@ cpdef test():
     print('Child number: ', child_nb)
     fps_list = _get_record_rate_list(device_nb, child_nb)
     print('Record rates: ', fps_list)
-    fps = fps_list[3]
+    fps = fps_list[0]
     _set_record_rate(device_nb, child_nb, fps)
     update_params(device_nb, child_nb, n_frames_per_trig=10000)
     print('Resolution: ', '{}x{}'.format(*_get_resolution(device_nb, child_nb)))
@@ -665,8 +713,8 @@ cpdef test():
 
     print("record(device_nb)")
     record(device_nb)
-    print("sleep(10)")
-    sleep(10)
+    print("sleep(5)")
+    sleep(5)
 
     set_playback(device_nb)
     print('Recording done')
@@ -722,6 +770,17 @@ cpdef read_live_frame(ulong device_nb, ulong child_nb, ulong width, ulong height
     else:
         return bw_img.reshape((height, width))
 
+
+cpdef read_live_frame_BW(ulong device_nb, ulong child_nb, ulong width, ulong height):
+    cdef:
+        ulong success = pdc_undefined
+        ulong error_code = pdc_undefined
+        size_t i, j
+
+    cdef np.ndarray[np.uint8_t, ndim=1] bw_img = np.empty(width * height, dtype=np.uint8)
+    success = PDC_GetLiveImageData(device_nb, child_nb, 8, &bw_img[0], &error_code)
+    check_pdc_failed(success, error_code)
+    return bw_img.reshape((height, width))
 
 # cpdef read_live_frame_to_np_ptr_2d(ulong device_nb, ulong child_nb,
 #                                 ulong width, ulong height, unsigned int[:,::view.contiguous] np_array):
