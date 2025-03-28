@@ -10,7 +10,14 @@
 
 from pyphotron.pyphotron_pdclib import test,test_live_CV2
 # test()
-test_live_CV2(fps_index=2, shutter_index=0, resolution_index=5)
+from ultralytics import YOLO
+
+yolo_m = YOLO("runs/detect/train2/weights/best.pt")
+
+
+
+
+test_live_CV2(fps_index=3, shutter_index=5, resolution_index=12, yolo = yolo_m)
 
 
 
@@ -42,3 +49,8 @@ Shutter speeds:  [  125,    250,    500,    640,    800,
                             '768x512',      '640x480',      '640x320',  '640x8']
 
 """
+
+
+
+
+

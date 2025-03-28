@@ -90,3 +90,5 @@ cdef extern from "PDCLIB.h":
 
     ulong PDC_SetPartitionList(ulong nDeviceNo, ulong nChildNo, ulong nCount, ulong *pBlocks, ulong *pErrorCode)
     ulong PDC_GetPartitionList(ulong nDeviceNo, ulong nChildNo, ulong *pCount, ulong *pFrames, ulong *pBlocks, ulong *pErrorCode)
+
+    ulong PDC_GetMemory(ulong nDeviceNo, ulong *pBlockAvailable, ulong *pBlockReserved, ulong *pErrorCode)

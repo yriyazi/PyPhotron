@@ -27,6 +27,30 @@ cdef ulong pdc_failed       = <int> PDC_FAILED
 cdef ulong pdc_succeeded    = <int> PDC_SUCCEEDED
 cdef ulong pdc_undefined    = 50000  # Custom for debugging
 
+
+
+
+
+
+
+
+cpdef triggers_port1(ulong device_nb):
+    cdef:
+        ulong success = pdc_failed
+        ulong error_code = pdc_failed
+
+    #define	PDC_EXT_IN_TRIGGER_POSI				0x08
+    #define	PDC_EXT_IN_TRIGGER_NEGA				0x09
+
+    PDC_SetExternalInMode(device_nb, 2, 0x09, &error_code)  # Could be used
+    check_pdc_failed(success, error_code)
+
+
+
+
+
+
+
 class PyPhotronException(Exception):
     pass
 
@@ -608,7 +632,7 @@ def clear_recording(ulong device_nb):
     set_rec_ready(device_nb)
     set_playback(device_nb)
 
-def test_live_CV2(fps_index, shutter_index, resolution_index):
+def test_live_CV2(fps_index, shutter_index, resolution_index,yolo):
     init_pdc_lib()
     cdef ulong device_nb    = auto_open_cam_lv()
     child_list              = _get_child_device_list(device_nb)
@@ -634,7 +658,26 @@ def test_live_CV2(fps_index, shutter_index, resolution_index):
     _loc_save = False
     while True:
         frame = read_live_frame_BW(device_nb, child_nb, *get_shape(resolutions[resolution_index]))
-        frame = frame * 2
+        frame = cv2.cvtColor(frame,cv2.COLOR_GRAY2RGB)
+        
+        results = yolo.predict(frame, verbose=False)#, half=True
+        for result in results:
+            for box in result.boxes.xywh.cpu().numpy():  # Iterate over detected boxes
+                x_center, y_center, w, h = box.astype(int)
+                #print(x_center, y_center, w, h)
+                # Convert to top-left (x1, y1) and bottom-right (x2, y2) format
+                x1 = int(x_center - w / 2)
+                y1 = int(y_center - h / 2)
+                x2 = int(x_center + w / 2)
+                y2 = int(y_center + h / 2)
+
+                color = (0, 255, 0)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(frame, "Bubble", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+
+
+        #frame = frame * 3
         # Increment the frame counter and FPS counter
         frame_count     += 1
         elapsed_time    = time2.time() - start_time
@@ -644,26 +687,39 @@ def test_live_CV2(fps_index, shutter_index, resolution_index):
             start_time  = time2.time()
         cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        equalized = cv2.equalizeHist(frame)
-        cv2.imshow("Live brighten", equalized)
+        #equalized = cv2.equalizeHist(frame)
+        #cv2.imshow("Live brighten", equalized)
+        cv2.imshow("Live brighten2", frame)
+
+
 
         #frame = process_frame(frame)
         #cv2.imshow('Edges', frame)
 
-        key = cv2.waitKey(1) & 0xFF
 
+
+        key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):  # Quit on 'q' key
             break
-
         elif key == ord('s'):  # Save the frame when 's' is pressed
             record(device_nb)
-            
-        
+
         elif key == ord('e'):
             _loc_save = True
             break
+        
+        elif key == ord('1'):
+            #_set_resolution (device_nb, child_nb, resolutions[12])
+            #resolution_index = 12
+            triggers_port1(device_nb)
+            print("activated")
 
-        sleep(1/58/2) # we sample frmaes with 58 Hz, it is realiztic when resolution is set to get_shape(resolutions[5])
+        elif key == ord('2'):
+            _set_resolution (device_nb, child_nb, resolutions[5])
+            resolution_index = 5
+    
+
+        #sleep(1/58/3) # we sample frmaes with 58 Hz, it is realiztic when resolution is set to get_shape(resolutions[5])
     
     if _loc_save:
         saving(device_nb, child_nb, fps)
@@ -671,6 +727,11 @@ def test_live_CV2(fps_index, shutter_index, resolution_index):
     close_cam(device_nb)
     print('Done')
 
+
+
+def overflowchecker(time_s):
+    5700000000
+    ##TODO Finish
 
 def saving(device_nb, child_nb, fps):
     set_playback(device_nb)

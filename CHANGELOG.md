@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - <p style="background-color:tomato;"> dual port saving </p>
 - <p style="background-color:tomato;"> making save directory roubust </p>
 - <p style="background-color:tomato;"> making naming skim better </p>
+- seprating functions in .pyx
 
 ### Added
 
