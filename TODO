@@ -1,1 +1,3 @@
 Adding support for 12 BIT recording.
+
+with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
