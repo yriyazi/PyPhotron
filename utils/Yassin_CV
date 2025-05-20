@@ -1,0 +1,19 @@
+import os
+import cv2
+
+def clear_screen():
+    # os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('cls')
+
+def preProcess(prev_gray, frame, kernel):
+    # blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # compute the difference between the current frame and the previous frame
+    diff        = cv2.absdiff(prev_gray, frame)
+    _, thresh   = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+    
+    thresh      = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    thresh      = cv2.dilate(thresh, kernel, iterations=2)
+    # Find contours (possible drops)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
