@@ -1,3 +1,9 @@
-Adding support for 12 BIT recording.
+Adding support for 12-bit recording.
 
-with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
+With a torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
+
+Compile OpenCV
+  Compile OpenCV with ffmpeg: Change the encoder library to *'H264'
+  Compile OpenCV with OpenGL: Use OpenGL backend to show the live feed
+  Compile OpenCV with CUDA: Use accellerated calculations
+  
