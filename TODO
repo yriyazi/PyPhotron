@@ -4,6 +4,6 @@ With a torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
 
 Compile OpenCV
   Compile OpenCV with ffmpeg: Change the encoder library to *'H264'
-  Compile OpenCV with OpenGL: Use OpenGL backend to show the live feed
-  Compile OpenCV with CUDA: Use accellerated calculations
+  Compile OpenCV with OpenGL: Use the OpenGL backend to show the live feed
+  Compile OpenCV with CUDA: Use accelerated calculations
   
